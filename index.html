@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0b0d10"
+  >
+
+  <title>Sport Tracker</title>
+
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
+</head>
+
+<body>
+
+  <div class="app">
+
+    <header class="topbar">
+
+      <div>
+        <div class="brand">
+          SPORT TRACKER
+        </div>
+
+        <div
+          class="subtitle"
+          id="pageSubtitle"
+        >
+          Capture a new movement
+        </div>
+      </div>
+
+      <div
+        id="connectionPill"
+        class="pill disconnected"
+      >
+        ● Disconnected
+      </div>
+
+    </header>
+
+
+    <main>
+
+      <!-- RECORD PAGE -->
+
+      <section
+        id="recordPage"
+        class="page active"
+      >
+
+        <div class="card">
+
+          <h2>Exercise</h2>
+
+          <div class="segmented">
+
+            <button
+              class="segment selected"
+              data-type="jump"
+            >
+              Jump
+            </button>
+
+            <button
+              class="segment"
+              data-type="barbell"
+            >
+              Barbell
+            </button>
+
+          </div>
+
+
+          <div
+            id="weightWrap"
+            class="field hidden"
+          >
+
+            <label for="weight">
+              Barbell weight
+            </label>
+
+            <div class="input-unit">
+
+              <input
+                id="weight"
+                type="number"
+                min="0"
+                step="0.5"
+                value="0"
+              >
+
+              <span>kg</span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="card">
+
+          <div class="metrics-row">
+
+            <div>
+              <span>Status</span>
+              <strong id="recordStatus">
+                Ready
+              </strong>
+            </div>
+
+            <div>
+              <span>Time</span>
+              <strong id="elapsed">
+                00:00.0
+              </strong>
+            </div>
+
+          </div>
+
+
+          <div class="chart-wrap">
+            <canvas id="liveChart"></canvas>
+          </div>
+
+        </div>
+
+
+        <div class="controls">
+
+          <button
+            id="startStop"
+            class="primary"
+          >
+            ● Start recording
+          </button>
+
+          <button
+            id="discard"
+            class="secondary"
+          >
+            Discard
+          </button>
+
+          <div class="save-options">
+            <button
+              id="saveSession"
+              class="wide primary"
+              disabled
+            >
+              Save session — Jump
+            </button>
+
+            <select
+              id="activitySelect"
+              class="hidden"
+            >
+              <option value="jump">Jump</option>
+              <option value="squat">Squat</option>
+              <option value="clean">Clean</option>
+              <option value="snatch">Snatch</option>
+              <option value="bench press">Bench Press</option>
+              <option value="deadlift">Deadlift</option>
+              <option value="barbell row">Barbell Row</option>
+              <option value="overhead press">Overhead Press</option>
+              <option value="lunge">Lunge</option>
+              <option value="push-up">Push-Up</option>
+              <option value="pull-up">Pull-Up</option>
+              <option value="other">Other</option>
+            </select>
+
+            <input
+              id="customActivity"
+              type="text"
+              placeholder="Enter activity name"
+              maxlength="40"
+              class="hidden"
+            >
+
+          </div>
+          <button
+            id="calibrate"
+            class="wide secondary"
+          >
+            <span id="calibrateIcon">⚙</span>
+            <span id="calibrateText">Calibrate</span>
+          </button>
+        </div>
+
+        <div class="card results">
+
+        <h2>Latest result</h2>
+
+        <div class="metric-grid">
+
+          <!-- REPS -->
+          <div class="metric-reps">
+            <span id="metric1Label">
+              Reps
+            </span>
+
+            <strong id="metric1">
+              —
+            </strong>
+          </div>
+
+
+          <!-- METRIC 2 -->
+          <div>
+            <span id="metric2Label">
+              Peak jump height
+            </span>
+
+            <strong id="metric2">
+              —
+            </strong>
+          </div>
+
+
+          <!-- METRIC 3 -->
+          <div>
+            <span id="metric3Label">
+              Average jump height
+            </span>
+
+            <strong id="metric3">
+              —
+            </strong>
+          </div>
+
+
+          <!-- METRIC 4 -->
+          <div>
+            <span id="metric4Label">
+              Peak velocity
+            </span>
+
+            <strong id="metric4">
+              —
+            </strong>
+          </div>
+
+        </div>
+
+      </div>
+
+      </section>
+
+
+      <!-- LOG PAGE -->
+
+      <section
+        id="logPage"
+        class="page"
+      >
+
+        <div class="card">
+
+          <div class="filter-grid">
+
+            <label>
+              Activity
+
+              <select id="activityFilter">
+                <option>All</option>
+              </select>
+
+            </label>
+
+
+            <label>
+              Metric
+
+              <select id="metricFilter">
+
+                <option>
+                  Peak Power
+                </option>
+
+                <option>
+                  Peak Velocity
+                </option>
+
+                <option>
+                  Peak Height
+                </option>
+
+              </select>
+
+            </label>
+
+          </div>
+
+        </div>
+
+
+        <div class="card">
+
+          <h2>
+            Performance over time
+          </h2>
+
+          <div class="chart-wrap large">
+
+            <canvas
+              id="historyChart"
+            ></canvas>
+
+          </div>
+
+        </div>
+
+
+        <div class="card">
+
+          <h2>
+            Saved sessions
+          </h2>
+
+          <div
+            id="sessions"
+            class="sessions"
+          ></div>
+
+        </div>
+
+      </section>
+
+
+      <!-- DEVICE PAGE -->
+
+      <section
+        id="devicePage"
+        class="page"
+      >
+
+        <div class="card device-card">
+
+          <div class="bluetooth-icon">
+            ᛒ
+          </div>
+
+          <h2 id="deviceTitle">
+            No device connected
+          </h2>
+
+          <p id="deviceText">
+            Connect your IMU device before recording.
+          </p>
+
+          <button
+            id="connect"
+            class="primary wide"
+          >
+            Connect to IMU_Sense
+          </button>
+
+        </div>
+
+
+        <div class="card">
+
+          <h2>
+            BLE protocol
+          </h2>
+
+          <p class="mono">
+            Service<br>
+            19B10000-E8F2-537E-4F6C-D104768A1214
+          </p>
+
+          <p class="mono">
+            Data<br>
+            19B10001-E8F2-537E-4F6C-D104768A1214
+          </p>
+
+          <p class="mono">
+            Command<br>
+            19B10002-E8F2-537E-4F6C-D104768A1214
+          </p>
+
+          <p class="mono">
+            Status<br>
+            19B10003-E8F2-537E-4F6C-D104768A1214
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <!-- SETTINGS PAGE -->
+
+      <section
+        id="settingsPage"
+        class="page"
+      >
+
+        <div class="card">
+
+          <h2>
+            Settings
+          </h2>
+
+
+          <div class="setting">
+
+            <div>
+              <strong>
+                Dark mode
+              </strong>
+
+              <span>
+                Always use the dark interface
+              </span>
+            </div>
+
+            <input
+              type="checkbox"
+              checked
+              disabled
+            >
+
+          </div>
+
+
+          <div class="setting">
+
+            <div>
+
+              <strong>
+                Storage
+              </strong>
+
+              <span>
+                Session statistics are stored locally
+                in this browser.
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="setting">
+
+            <div>
+
+              <strong>
+                IMU sample rate
+              </strong>
+
+              <span>
+                416 Hz target
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <button
+            id="clearData"
+            class="danger wide"
+          >
+            Clear all local sessions
+          </button>
+
+        </div>
+
+      </section>
+
+    </main>
+
+
+    <!-- BOTTOM NAV -->
+
+    <nav class="bottom-nav">
+
+      <button
+        class="nav selected"
+        data-page="recordPage"
+      >
+        ▣
+        <span>Record</span>
+      </button>
+
+
+      <button
+        class="nav"
+        data-page="logPage"
+      >
+        ⌁
+        <span>Log</span>
+      </button>
+
+
+      <button
+        class="nav"
+        data-page="devicePage"
+      >
+        ᛒ
+        <span>Device</span>
+      </button>
+
+
+      <button
+        class="nav"
+        data-page="settingsPage"
+      >
+        ⚙
+        <span>Settings</span>
+      </button>
+
+    </nav>
+
+  </div>
+
+
+  <div
+    id="toast"
+    class="toast"
+  ></div>
+
+
+  <script src="js/app.js"></script>
+
+</body>
+</html>

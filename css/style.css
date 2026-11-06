@@ -1,0 +1,543 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #0b0d10;
+  color: #f2f4f7;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  padding-bottom: 76px;
+}
+
+.app {
+  max-width: 900px;
+  margin: auto;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 20px 18px;
+  position: sticky;
+  top: 0;
+  background: #0b0d10ee;
+  backdrop-filter: blur(14px);
+  z-index: 5;
+}
+
+.brand {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.subtitle {
+  color: #8e96a3;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.pill {
+  font-size: 12px;
+  padding: 8px 11px;
+  border-radius: 99px;
+  background: #171b21;
+}
+
+.pill.connected {
+  color: #72e29a;
+}
+
+.pill.disconnected {
+  color: #9aa1ab;
+}
+
+.page {
+  display: none;
+  padding: 0 20px 25px;
+}
+
+.page.active {
+  display: block;
+}
+
+.card {
+  background: #15181d;
+  border: 1px solid #222731;
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 30px #00000020;
+}
+
+h2 {
+  font-size: 16px;
+  margin: 0 0 14px;
+}
+
+p {
+  color: #a6adba;
+  line-height: 1.55;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #0e1115;
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.segment {
+  border: 0;
+  background: transparent;
+  color: #8f97a4;
+  padding: 12px;
+  border-radius: 9px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.segment.selected {
+  background: #252b34;
+  color: white;
+}
+
+.field {
+  margin-top: 18px;
+}
+
+.field label,
+label {
+  display: block;
+  color: #a8afbb;
+  font-size: 13px;
+}
+
+.input-unit {
+  display: flex;
+  align-items: center;
+  margin-top: 7px;
+  background: #0e1115;
+  border: 1px solid #2a3039;
+  border-radius: 10px;
+}
+
+.input-unit input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: white;
+  padding: 13px;
+  font-size: 16px;
+  outline: 0;
+}
+
+.input-unit span {
+  padding-right: 13px;
+  color: #8e96a3;
+}
+
+.hidden {
+  display: none;
+}
+
+
+/* =========================================
+   METRICS
+   ========================================= */
+
+.metrics-row,
+.metric-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.metrics-row {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+
+/* Latest result:
+   Reps = smaller
+   Other 3 metrics = equal size
+*/
+
+.metric-grid {
+  grid-template-columns: 0.65fr 1fr 1fr 1fr;
+}
+
+.metrics-row div,
+.metric-grid div {
+  background: #0e1115;
+  border-radius: 10px;
+  padding: 10px;
+  min-width: 0;
+}
+
+.metrics-row span,
+.metric-grid span {
+  display: block;
+  color: #858d99;
+  font-size: 10px;
+  margin-bottom: 4px;
+}
+
+.metrics-row strong,
+.metric-grid strong {
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+
+/* =========================================
+   CHARTS
+   ========================================= */
+
+.chart-wrap {
+  height: 190px;
+  margin-top: 15px;
+}
+
+.chart-wrap.large {
+  height: 290px;
+}
+
+.chart-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+
+/* =========================================
+   CONTROLS
+   ========================================= */
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.wide {
+  width: 100%;
+}
+
+.primary,
+.secondary,
+.danger {
+  border: 0;
+  border-radius: 11px;
+  padding: 14px 17px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.primary {
+  background: #e9edf2;
+  color: #0b0d10;
+}
+
+.secondary {
+  background: #1b2027;
+  color: #e6e9ed;
+  border: 1px solid #2b323c;
+}
+
+.danger {
+  background: #321b20;
+  color: #ff9fa8;
+  border: 1px solid #57252c;
+}
+
+.primary:disabled,
+.secondary:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   RESULTS
+   ========================================= */
+
+.results {
+  margin-top: 16px;
+}
+
+
+/* =========================================
+   FILTERS
+   ========================================= */
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+select {
+  margin-top: 7px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #2a3039;
+  background: #0e1115;
+  color: #f2f4f7;
+}
+
+
+/* =========================================
+   SESSIONS
+   ========================================= */
+
+.session {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #242932;
+}
+
+.session:last-child {
+  border-bottom: 0;
+}
+
+.session-title {
+  font-weight: 700;
+}
+
+.session-date {
+  color: #858d99;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.session-values {
+  text-align: right;
+  font-weight: 700;
+}
+
+.session-values small {
+  display: block;
+  color: #858d99;
+  font-weight: 400;
+}
+
+
+/* =========================================
+   DEVICE
+   ========================================= */
+
+.device-card {
+  text-align: center;
+  padding: 35px 20px;
+}
+
+.bluetooth-icon {
+  font-size: 55px;
+  margin-bottom: 8px;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #8f98a5;
+  word-break: break-all;
+}
+
+
+/* =========================================
+   SETTINGS
+   ========================================= */
+
+.setting {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid #242932;
+}
+
+.setting span {
+  display: block;
+  color: #858d99;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.setting input {
+  accent-color: #58a6ff;
+}
+
+.setting + .danger {
+  margin-top: 18px;
+}
+
+
+/* =========================================
+   BOTTOM NAV
+   ========================================= */
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 68px;
+  background: #111419f5;
+  border-top: 1px solid #242932;
+  display: flex;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(15px);
+}
+
+.nav {
+  width: min(225px, 25%);
+  border: 0;
+  background: transparent;
+  color: #737b87;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.nav span {
+  display: block;
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.nav.selected {
+  color: #f3f5f7;
+}
+
+
+/* =========================================
+   TOAST
+   ========================================= */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 84px;
+  transform: translate(-50%, 20px);
+  opacity: 0;
+  background: #eef1f5;
+  color: #0b0d10;
+  padding: 11px 15px;
+  border-radius: 10px;
+  font-size: 13px;
+  transition: .2s;
+  z-index: 20;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+
+/* =========================================
+   EMPTY SESSIONS
+   ========================================= */
+
+.sessions:empty:after {
+  content: "No saved sessions yet.";
+  display: block;
+  color: #737b87;
+  padding: 20px 0;
+  text-align: center;
+}
+
+
+/* =========================================
+   CALIBRATION
+   ========================================= */
+
+#calibrateIcon {
+  display: inline-block;
+}
+
+#calibrateIcon.spinning {
+  animation: calibrateSpin 1s linear infinite;
+}
+
+@keyframes calibrateSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 600px) {
+
+  .topbar {
+    padding: 18px 14px;
+  }
+
+  .page {
+    padding: 0 14px 20px;
+  }
+
+  /* Still keep all 4 result boxes on one row */
+  .metric-grid {
+    grid-template-columns: 0.65fr 1fr 1fr 1fr;
+    gap: 6px;
+  }
+
+  .metric-grid div {
+    padding: 8px 6px;
+  }
+
+  .metric-grid span {
+    font-size: 8px;
+  }
+
+  .metric-grid strong {
+    font-size: 13px;
+  }
+
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .controls .secondary {
+    width: 100%;
+  }
+}
+
+#calibrateIcon.spinning {
+  animation: calibrateSpin 1s linear infinite;
+}
+
+@keyframes calibrateSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
