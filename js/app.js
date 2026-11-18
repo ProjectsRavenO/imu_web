@@ -864,8 +864,7 @@ function calculateMetrics() {
 
     
 
-    const acceleration =
-      filtered[i] * 9.80665;
+    filtered[i]= filtered[i]* 9.80665;
 
     velocity +=
     (filtered[i - 1] + filtered[i]) / 2 * dt;
@@ -875,8 +874,19 @@ function calculateMetrics() {
   const meanVelocity =
   velocities.reduce((sum, v) => sum + v, 0) / velocities.length;
   
-  const centredVelocities =
-  velocities.map(v => v - meanVelocity);
+  const centredVelocities = velocities;
+
+  console.log("Mean velocity:", meanVelocity);
+  console.log("Velocity samples:", velocities.slice(0, 10));
+  console.log("All velocities finite:",
+    velocities.every(Number.isFinite)
+  );
+  console.log("Centred velocities finite:",
+    centredVelocities.every(Number.isFinite)
+  );
+  console.log("Peak centred velocity:",
+    Math.max(...centredVelocities)
+  );
 
 
   // ----------------------------------------------------------
