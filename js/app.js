@@ -774,7 +774,7 @@ function updateElapsed() {
 
 
 // wrong section correct
-function bandpass_filter(samples, cutoffHzlow=0.05 ,cutoffHzhigh = 30) {
+function bandpass_filter(samples, cutoffHzlow=0.2 ,cutoffHzhigh = 30) {
   const fs = 416;
   const G = 9.80665;
 
@@ -872,6 +872,10 @@ function calculateMetrics() {
 
     velocities[i] = velocity;
   }
+  const meanVelocity =
+  velocities.reduce((sum, v) => sum + v, 0) / velocities.length;
+  
+  velocities=velocities-meanVelocity
 
 
   // ----------------------------------------------------------
@@ -985,7 +989,7 @@ function calculateMetrics() {
 
       jumpHeight =
         ((peakVelocity **2) /
-        (2 * 9.80665))/100;
+        (2 * 9.80665));
     }
 
 
