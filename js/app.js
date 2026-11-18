@@ -874,7 +874,8 @@ function calculateMetrics() {
   const meanVelocity =
   velocities.reduce((sum, v) => sum + v, 0) / velocities.length;
   
-  const centredVelocities = velocities;
+  const centredVelocities =
+  velocities.map(v => v - meanVelocity);
 
   console.log("Mean velocity:", meanVelocity);
   console.log("Velocity samples:", velocities.slice(0, 10));
