@@ -772,6 +772,8 @@ function updateElapsed() {
 
 
 
+
+// wrong section correct
 function bandpass_filter(samples, cutoffHzlow=0.05 ,cutoffHzhigh = 30) {
   const fs = 416;
   const G = 9.80665;
@@ -856,20 +858,17 @@ function calculateMetrics() {
   velocities[0] = 0;
 
   let velocity = 0;
+  const dt =1/416;
 
   for (let i = 1; i < samples.length; i++) {
 
-    const dt =
-      Math.max(
-        0.0005,
-        (samples[i].t - samples[i - 1].t) / 1e6
-      );
+    
 
     const acceleration =
       filtered[i] * 9.80665;
 
     velocity +=
-      acceleration * dt;
+    (filtered[i - 1] + filtered[i]) / 2 * dt;
 
     velocities[i] = velocity;
   }
