@@ -1,3 +1,8 @@
+import {
+  butterworth,
+  filtfilt
+} from "https://cdn.jsdelivr.net/npm/digital-filter@2.4.3/+esm";
+
 const UUID = {
   service: "19b10000-e8f2-537e-4f6c-d104768a1214",
   data: "19b10001-e8f2-537e-4f6c-d104768a1214",
@@ -42,7 +47,10 @@ document.querySelectorAll(".nav").forEach(b =>
 );
 
 
-
+$("exportRecording").addEventListener(
+    "click",
+    exportRecordingCSV
+);
 
 $("weight").addEventListener("input", () => {
 
@@ -203,7 +211,7 @@ $("activitySelect").classList.add("hidden");
 $("customActivity").classList.add("hidden");
 
 $("saveSession").textContent =
-  "Save session — Jump";
+  "Save session";
 
 $("activitySelect").value = "jump";
 $("customActivity").value = "";
@@ -383,7 +391,10 @@ function onStatus(ev) {
     state.calibrated = true;
 
     $("recordStatus").textContent = "Ready";
-    $("startStop").disabled = false;
+    $("calibrate").disabled = false;
+    $("startStop").disabled = false;  
+    $("calibrateIcon").classList.remove("spinning");
+    $("calibrateText").textContent = "Calibrate";
 
     toast("Calibration successful");
     return;
@@ -460,6 +471,7 @@ async function startRecording() {
 
   // Clear previous recording.
   state.samples = [];
+  state.finalFiltered = [];
 
   // A new recording means there is currently
   // no unsaved result.
@@ -510,6 +522,138 @@ async function stopRecording() {
   drawLive();
 }
 
+
+function exportRecordingCSV() {
+
+    const samples = state.samples;
+
+    if (!samples || samples.length === 0) {
+        toast("No recording data available to export.");
+        return;
+    }
+
+    // Calculate metrics from the current recording.
+    const result = samples.length >= 20
+        ? calculateMetrics()
+        : null;
+
+    const reps = result?.reps || [];
+
+    // Assign each sample to its repetition.
+    const repNumbers = new Array(samples.length).fill("");
+
+    reps.forEach((rep, index) => {
+        for (let i = rep.start; i <= rep.end; i++) {
+            repNumbers[i] = index + 1;
+        }
+    });
+
+    const firstTimestamp = samples[0].t;
+
+    const recordingDate = new Date().toISOString();
+
+    const activity = state.type;
+
+    const weight =
+        Number($("weight")?.value) || 0;
+
+    // CSV column headings.
+    const headers = [
+        "recording_date_utc",
+        "activity",
+        "activity_type",
+        "weight_kg",
+        "sample_index",
+        "device_timestamp_raw",
+        "elapsed_seconds",
+        "x_raw",
+        "y_raw",
+        "z_raw",
+        "rep_number",
+        "rep_peak_velocity_m_s",
+        "rep_jump_height_m",
+        "rep_peak_power_w"
+    ];
+
+    const rows = samples.map((sample, index) => {
+
+        const repNumber = repNumbers[index];
+
+        const rep = repNumber
+            ? reps[repNumber - 1]
+            : null;
+
+        // Put repetition metrics on its peak sample.
+        const isPeakSample =
+            rep && index === rep.peakIndex;
+
+        return [
+            recordingDate,
+            activity,
+            state.type,
+            weight,
+            index,
+            sample.t,
+            ((sample.t - firstTimestamp) >>> 0) / 1e6,
+            sample.x,
+            sample.y,
+            sample.z,
+            repNumber,
+            isPeakSample ? rep.peakVelocity : "",
+            isPeakSample ? rep.jumpHeight : "",
+            isPeakSample ? rep.peakPower : ""
+        ];
+    });
+
+    // Safely format CSV values.
+    const escapeCSV = value => {
+        let text = String(value ?? "");
+
+        // Prevent spreadsheet formula interpretation,
+        // but preserve negative numeric values.
+        if (/^[=+@ \t\r]/.test(text)) {
+            text = "'" + text;
+        }
+
+        return `"${text.replace(/"/g, '""')}"`;
+    };
+
+    const csv = [
+        headers.map(escapeCSV).join(","),
+        ...rows.map(row =>
+            row.map(escapeCSV).join(",")
+        )
+    ].join("\r\n");
+
+    // Create downloadable CSV file.
+    const blob = new Blob(
+        ["\uFEFF" + csv],
+        { type: "text/csv;charset=utf-8;" }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+
+    link.download =
+        `IMU_Recording_${new Date()
+            .toISOString()
+            .replace(/[:.]/g, "-")}.csv`;
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    URL.revokeObjectURL(url);
+
+    toast("Recording CSV exported successfully.");
+}
+
+
 function setLatest(r) {
 
   if (state.type === "jump") {
@@ -519,11 +663,11 @@ function setLatest(r) {
 
     $("metric2Label").textContent = "Peak jump height";
     $("metric2").textContent =
-      r.overallPeakJumpHeight.toFixed(2) + " m";
+      r.overallPeakJumpHeight.toFixed(2) + " cm";
 
     $("metric3Label").textContent = "Average jump height";
     $("metric3").textContent =
-      r.averageJumpHeight.toFixed(2) + " m";
+      r.averageJumpHeight.toFixed(2) + " cm";
 
     $("metric4Label").textContent = "Peak velocity";
     $("metric4").textContent =
@@ -599,7 +743,7 @@ async function calibrate() {
   $("calibrateText").textContent = "Calibrating…";
 
   const sent = await sendCommand("CALIBRATE");
-
+ 
   // If the command itself failed to send,
   // don't leave the UI stuck in calibration mode.
   if (!sent) {
@@ -625,37 +769,43 @@ function updateElapsed() {
     `${(s % 60).toFixed(1).padStart(4, "0")}`;
 }
 
-function lowPassAcceleration(samples, cutoffHz = 20) {
-  const RC = 1 / (2 * Math.PI * cutoffHz);
 
-  const filtered = new Array(samples.length);
 
-  if (!samples.length) {
-    return filtered;
+
+function bandpass_filter(samples, cutoffHzlow=0.05 ,cutoffHzhigh = 30) {
+  const fs = 416;
+  const G = 9.80665;
+
+  if (!samples || samples.length === 0) {
+    return [];
   }
 
-  filtered[0] = samples[0].z / 1000;
+  // Convert raw accelerometer readings from mg to m/s².
+  const signal = Float64Array.from(
+    samples,
+    s => (s.z / 1000) * G
+  );
 
-  for (let i = 1; i < samples.length; i++) {
+  // Design 4th-order Butterworth band-pass filter.
+  const sos = butterworth(
+    4,
+    [cutoffHzlow, cutoffHzhigh],
+    fs,
+    "bandpass"
+  );
 
-    const dt = Math.max(
-      0.0005,
-      (samples[i].t - samples[i - 1].t) / 1e6
-    );
+  // Apply forward-backward filtering (zero phase).
+  // This modifies signal in place.
+  filtfilt(signal, { coefs: sos });
 
-    const raw =
-      samples[i].z / 1000;
-
-    const alpha =
-      dt / (RC + dt);
-
-    filtered[i] =
-      filtered[i - 1] +
-      alpha * (raw - filtered[i - 1]);
-  }
-
-  return filtered;
+  return Array.from(signal);
 }
+
+
+
+
+
+
 function calculateMetrics() {
 
   if (state.samples.length < 20) {
@@ -664,11 +814,12 @@ function calculateMetrics() {
       peakPower: 0,
       peakHeight: 0,
       reps: [],
-      repCount: 0,
+      repCount: 1,
       averagePeakPower: 0,
       overallPeakPower: 0,
       averageJumpHeight: 0,
-      overallPeakJumpHeight: 0
+      overallPeakJumpHeight: 0,
+      finalFiltered: []
     };
   }
 
@@ -678,26 +829,21 @@ function calculateMetrics() {
   // Activity
   // ----------------------------------------------------------
 
-  const activity =
-    $("activitySelect")?.value || state.type;
-
-  const isJump =
-    activity.toLowerCase() === "jump";
+  const isJump = state.type === "jump";
 
   // ----------------------------------------------------------
   // Filter Z acceleration
   // ----------------------------------------------------------
 
   const filtered =
-    lowPassAcceleration(samples, 20);
-
+    bandpass_filter(samples);
+  state.finalFiltered = filtered;
 
   // ----------------------------------------------------------
   // Detect reps
   // ----------------------------------------------------------
 
-  const reps =
-    detectReps(samples, filtered);
+  const reps = []
 
 
   // ----------------------------------------------------------
@@ -839,11 +985,8 @@ function calculateMetrics() {
     if (isJump) {
 
       jumpHeight =
-        (
-          peakVelocity *
-          peakVelocity
-        ) /
-        (2 * 9.80665);
+        ((peakVelocity **2) /
+        (2 * 9.80665))/100;
     }
 
 
@@ -899,9 +1042,8 @@ function calculateMetrics() {
       : 0;
 
 
-  const overallPeakJumpHeight =
-    jumpValues.length
-      ? Math.max(...jumpValues)
+  const overallPeakJumpHeight = isJump
+      ? (overallPeakVelocity ** 2) / (2 * 9.80665)
       : 0;
 
 
@@ -936,208 +1078,6 @@ function calculateMetrics() {
 }
 
 
-// ============================================================
-// GENERAL REP DETECTOR
-// ============================================================
-function detectReps(samples, filtered) {
-
-  const reps = [];
-
-  if (!samples || samples.length < 20) {
-    return reps;
-  }
-
-  // ----------------------------------------------------------
-  // THRESHOLDS
-  // ----------------------------------------------------------
-
-  // Movement must get above this level.
-  const START_THRESHOLD = 0.15; // g
-
-  // Movement must fall below this level.
-  const END_THRESHOLD = 0.10; // g
-
-  // Signal must remain ABOVE the start threshold
-  // for this long before a rep starts.
-  const START_CONFIRM_TIME = 50; // ms
-
-  // Signal must remain BELOW the end threshold
-  // for this long before a rep ends.
-  const END_CONFIRM_TIME = 50; // ms
-
-  // Minimum total rep duration.
-  const MIN_REP_TIME = 400; // ms
-
-  // Minimum time between completed reps.
-  const MIN_REST_TIME = 150; // ms
-
-
-  // ----------------------------------------------------------
-  // STATE
-  // ----------------------------------------------------------
-
-  let inRep = false;
-
-  let startIndex = 0;
-
-  let aboveStartSince = null;
-
-  let belowEndSince = null;
-
-  let lastRepEndTime = -Infinity;
-
-
-  // ----------------------------------------------------------
-  // PROCESS SIGNAL
-  // ----------------------------------------------------------
-
-  for (
-    let i = 1;
-    i < samples.length;
-    i++
-  ) {
-
-    const time =
-      samples[i].t / 1000;
-
-    const value =
-      Math.abs(filtered[i]);
-
-
-    // ========================================================
-    // WAITING FOR REP
-    // ========================================================
-
-    if (!inRep) {
-
-      if (value > START_THRESHOLD) {
-
-        // Start timing the threshold crossing.
-        if (aboveStartSince === null) {
-          aboveStartSince = time;
-        }
-
-        const aboveDuration =
-          time - aboveStartSince;
-
-        /*
-         * The signal has remained above the threshold
-         * long enough to count as intentional movement.
-         */
-        if (
-          aboveDuration >= START_CONFIRM_TIME &&
-          time - lastRepEndTime >= MIN_REST_TIME
-        ) {
-
-          inRep = true;
-
-          /*
-           * Go back to the beginning of the
-           * threshold crossing rather than starting
-           * exactly at the confirmation point.
-           */
-          startIndex = i;
-
-          belowEndSince = null;
-        }
-
-      } else {
-
-        /*
-         * Signal dropped back below the threshold
-         * before confirmation.
-         *
-         * Therefore it was probably just noise.
-         */
-        aboveStartSince = null;
-      }
-
-      continue;
-    }
-
-
-    // ========================================================
-    // CURRENTLY INSIDE REP
-    // ========================================================
-
-    if (value < END_THRESHOLD) {
-
-      if (belowEndSince === null) {
-        belowEndSince = time;
-      }
-
-      const belowDuration =
-        time - belowEndSince;
-
-      const repDuration =
-        time -
-        samples[startIndex].t / 1000;
-
-
-      /*
-       * Only finish the rep if the signal has stayed
-       * quiet for the required amount of time.
-       */
-      if (
-        belowDuration >= END_CONFIRM_TIME &&
-        repDuration >= MIN_REP_TIME
-      ) {
-
-        reps.push({
-          start: startIndex,
-          end: i
-        });
-
-        inRep = false;
-
-        lastRepEndTime = time;
-
-        aboveStartSince = null;
-        belowEndSince = null;
-      }
-
-    } else {
-
-      /*
-       * Movement came back before the end was confirmed.
-       *
-       * Therefore the rep is still happening.
-       */
-      belowEndSince = null;
-    }
-  }
-
-
-  // ==========================================================
-  // FINAL REP
-  // ==========================================================
-
-  if (inRep) {
-
-    const endIndex =
-      samples.length - 1;
-
-    const endTime =
-      samples[endIndex].t / 1000;
-
-    const startTime =
-      samples[startIndex].t / 1000;
-
-    const duration =
-      endTime - startTime;
-
-    if (duration >= MIN_REP_TIME) {
-
-      reps.push({
-        start: startIndex,
-        end: endIndex
-      });
-    }
-  }
-
-
-  return reps;
-}
 function drawLive() {
   const c = $("liveChart");
 
@@ -1177,6 +1117,11 @@ function drawLive() {
 
     const arr = state.samples;
 
+    const useFiltered =
+      !state.recording &&
+      state.finalFiltered &&
+      state.finalFiltered.length === arr.length;
+
     ctx.beginPath();
 
     ctx.strokeStyle = "#8fbaf0";
@@ -1213,22 +1158,19 @@ function drawLive() {
     if (
       !state.recording &&
       state.latestResult &&
-      state.latestResult.reps
+      state.latestResult.reps &&
+      state.finalFiltered &&
+      state.finalFiltered.length === arr.length
     ) {
 
-      const reps =
-        state.latestResult.reps;
+      const reps = state.latestResult.reps;
 
       reps.forEach(rep => {
 
-        /*
-         * Find the peak point inside this repetition.
-         */
         let peakIndex = rep.start;
-        let peakValue =
-          Math.abs(
-            arr[peakIndex].z / 1000
-          );
+        let peakValue = Math.abs(
+          state.finalFiltered[peakIndex]
+        );
 
         for (
           let i = rep.start;
@@ -1236,10 +1178,9 @@ function drawLive() {
           i++
         ) {
 
-          const value =
-            Math.abs(
-              arr[i].z / 1000
-            );
+          const value = Math.abs(
+            state.finalFiltered[i]
+          );
 
           if (value > peakValue) {
             peakValue = value;
@@ -1247,26 +1188,16 @@ function drawLive() {
           }
         }
 
-        /*
-         * Convert sample index to graph position.
-         */
         const x =
-          peakIndex /
-          (arr.length - 1) *
-          w;
+          peakIndex / (arr.length - 1) * w;
 
         const value =
-          arr[peakIndex].z / 1000;
+          state.finalFiltered[peakIndex] / 9.80665;
 
         const y =
-          h / 2 -
-          value * 30;
+          h / 2 - value * 30;
 
-        /*
-         * Draw peak dot.
-         */
         ctx.beginPath();
-
         ctx.fillStyle = "#e9edf2";
 
         ctx.arc(
