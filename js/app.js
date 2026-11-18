@@ -875,7 +875,8 @@ function calculateMetrics() {
   const meanVelocity =
   velocities.reduce((sum, v) => sum + v, 0) / velocities.length;
   
-  velocities=velocities-meanVelocity
+  const centredVelocities =
+  velocities.map(v => v - meanVelocity);
 
 
   // ----------------------------------------------------------
@@ -884,21 +885,21 @@ function calculateMetrics() {
 
   let overallPeakVelocity = 0;
 
-  for (let i = 0; i < velocities.length; i++) {
+  for (let i = 0; i < centredVelocities.length; i++) {
 
     if (isJump) {
       // For jumps we care about upward velocity.
       overallPeakVelocity =
         Math.max(
           overallPeakVelocity,
-          velocities[i]
+          centredVelocities[i]
         );
     } else {
       // For general movements, magnitude is more useful.
       overallPeakVelocity =
         Math.max(
           overallPeakVelocity,
-          Math.abs(velocities[i])
+          Math.abs(centredVelocities[i])
         );
     }
   }
@@ -937,8 +938,8 @@ function calculateMetrics() {
 
       const currentVelocity =
         isJump
-          ? velocities[i]
-          : Math.abs(velocities[i]);
+          ? centredVelocities[i]
+          : Math.abs(centredVelocities[i]);
 
       if (
         currentVelocity >
