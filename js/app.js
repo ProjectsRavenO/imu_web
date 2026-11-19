@@ -862,10 +862,6 @@ function calculateMetrics() {
 
   for (let i = 1; i < samples.length; i++) {
 
-    
-
-    filtered[i]= filtered[i]* 9.80665;
-
     velocity +=
     (filtered[i - 1] + filtered[i]) / 2 * dt;
 
