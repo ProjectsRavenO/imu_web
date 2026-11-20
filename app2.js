@@ -763,6 +763,11 @@ function updateElapsed() {
     `${(s % 60).toFixed(1).padStart(4, "0")}`;
 }
 
+
+
+
+
+// wrong section correct
 function lowPassAcceleration(samples, cutoffHz = 20) {
   const RC = 1 / (2 * Math.PI * cutoffHz);
 
@@ -794,6 +799,13 @@ function lowPassAcceleration(samples, cutoffHz = 20) {
 
   return filtered;
 }
+
+////
+
+
+
+
+
 function calculateMetrics() {
 
   if (state.samples.length < 20) {

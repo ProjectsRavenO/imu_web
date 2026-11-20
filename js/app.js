@@ -445,7 +445,8 @@ function onData(ev) {
       t: v.getUint32(o, true),
       x: v.getInt16(o + 4, true),
       y: v.getInt16(o + 6, true),
-      z: v.getInt16(o + 8, true)
+      z: v.getInt16(o + 8, true),
+      sample_num: v.getUint16(o + 10, true)
     });
   }
 
