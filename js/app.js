@@ -440,7 +440,7 @@ function onStatus(ev) {
 function onData(ev) {
   const v = ev.target.value;
 
-  for (let o = 0; o + 10 <= v.byteLength; o += 10) {
+  for (let o = 0; o + 12 <= v.byteLength; o += 12) {
     state.samples.push({
       t: v.getUint32(o, true),
       x: v.getInt16(o + 4, true),
