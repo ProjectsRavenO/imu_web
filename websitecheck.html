@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BLE IMU Graph</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>BLE IMU Graph</h1>
+  <button id="connectBtn">Connect to IMU</button>
+  <button id="toggleBtn" disabled>Start Recording</button>
+  <canvas id="imuChart" width="800" height="400"></canvas>
+
+  <script>
+    const serviceUUID = '0000181a-0000-1000-8000-00805f9b34fb';
+    const charUUID    = '00002a37-0000-1000-8000-00805f9b34fb';
+    const cmdUUID     = '00002a38-0000-1000-8000-00805f9b34fb'; // RX characteristic
+
+    const connectBtn = document.getElementById('connectBtn');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const ctx = document.getElementById('imuChart').getContext('2d');
+
+    let leftover = new Uint8Array(0);
+    let cumulativeTime = 0;
+    let characteristic, cmdCharacteristic;
+    let isRecording = false;
+
+    // Chart setup
+    const imuChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'AX', data: [], borderColor: 'red', fill: false },
+          { label: 'AY', data: [], borderColor: 'green', fill: false },
+          { label: 'AZ', data: [], borderColor: 'blue', fill: false }
+        ]
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        plugins: { legend: { position: 'top' } },
+        scales: {
+          x: { title: { display: true, text: 'Time (s)' } },
+          y: { title: { display: true, text: 'Acceleration (g)' } }
+        }
+      }
+    });
+
+    const pendingData = [];
+    const chartInterval = 50; // ms
+
+    // Update chart
+    setInterval(() => {
+      if (pendingData.length > 0) {
+        pendingData.forEach(d => {
+          imuChart.data.labels.push(d.time);
+          imuChart.data.datasets[0].data.push(d.ax);
+          imuChart.data.datasets[1].data.push(d.ay);
+          imuChart.data.datasets[2].data.push(d.az);
+        });
+        while (imuChart.data.labels.length > 100) {
+          imuChart.data.labels.shift();
+          imuChart.data.datasets.forEach(ds => ds.data.shift());
+        }
+        imuChart.update('none');
+        pendingData.length = 0;
+      }
+    }, chartInterval);
+
+    // Connect to IMU
+    connectBtn.addEventListener('click', async () => {
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [serviceUUID] }]
+        });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(serviceUUID);
+        characteristic = await service.getCharacteristic(charUUID);
+        cmdCharacteristic = await service.getCharacteristic(cmdUUID);
+
+        // Start notifications for IMU data
+        await characteristic.startNotifications();
+        characteristic.addEventListener('characteristicvaluechanged', (event) => {
+          const value = new Uint8Array(event.target.value.buffer);
+          let data = new Uint8Array(leftover.length + value.length);
+          data.set(leftover, 0);
+          data.set(value, leftover.length);
+
+          let i = 0;
+          const sampleSize = 8;
+
+          while (i + sampleSize <= data.length) {
+            const view = new DataView(data.buffer, i, sampleSize);
+            const ax = view.getInt16(0, true) / 100;
+            const ay = view.getInt16(2, true) / 100;
+            const az = view.getInt16(4, true) / 100;
+            const dt = view.getInt16(6, true) / 10000;
+
+            cumulativeTime += dt;
+            pendingData.push({ time: cumulativeTime.toFixed(4), ax, ay, az });
+            i += sampleSize;
+          }
+
+          leftover = data.slice(i);
+        });
+
+        // Start notifications for command characteristic
+        await cmdCharacteristic.startNotifications();
+        cmdCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
+          const value = new TextDecoder().decode(event.target.value);
+          if (value === "START") {
+            isRecording = true;
+            toggleBtn.textContent = 'Stop Recording';
+          } else if (value === "STOP") {
+            isRecording = false;
+            toggleBtn.textContent = 'Start Recording';
+          }
+        });
+
+        toggleBtn.disabled = false; // enable recording toggle button
+      } catch (error) {
+        alert('Error: ' + error);
+      }
+    });
+
+    // Start / Stop button
+    toggleBtn.addEventListener('click', async () => {
+      if (!cmdCharacteristic) return;
+
+      isRecording = !isRecording;
+      const msg = isRecording ? 'START' : 'STOP';
+      await cmdCharacteristic.writeValue(new TextEncoder().encode(msg));
+      toggleBtn.textContent = isRecording ? 'Stop Recording' : 'Start Recording';
+    });
+  </script>
+</body>
+</html>
